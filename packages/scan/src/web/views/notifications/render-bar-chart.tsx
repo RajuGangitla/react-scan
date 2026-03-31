@@ -14,6 +14,11 @@ import {
   HighlightStore,
   drawHighlights,
 } from '~core/notifications/outline-overlay';
+import {
+  filterSortedRankedBarsBySearch,
+  getRankedBarDisplayLabel,
+  getSafeRankedWidthDenominator,
+} from '~web/utils/ranked-bar-chart-search';
 import { ChevronRight } from './icons';
 
 // todo: cleanup, convoluted ternaries
@@ -65,6 +70,7 @@ export const RenderBarChart = ({
   const totalInteractionTime = getTotalTime(selectedEvent.timing);
   const nonRender = totalInteractionTime - selectedEvent.timing.renderTime;
   const [isProduction] = useState(getIsProduction());
+  const [rankedSearchQuery, setRankedSearchQuery] = useState('');
   const events = selectedEvent.groupedFiberRenders;
   const bars: Bars = events.map((event) => ({
     event,
@@ -121,7 +127,16 @@ export const RenderBarChart = ({
     timer: null,
   });
 
-  const totalBarTime = bars.reduce((prev, curr) => prev + curr.totalTime, 0);
+  const fullTotalBarTime = bars.reduce((prev, curr) => prev + curr.totalTime, 0);
+  const safeBarWidthDenominator =
+    getSafeRankedWidthDenominator(fullTotalBarTime);
+
+  const sortedBars = bars.toSorted((a, b) => b.totalTime - a.totalTime);
+  const visibleTopLevelBars = filterSortedRankedBarsBySearch(
+    sortedBars,
+    rankedSearchQuery,
+  );
+  const rankedSearchTrimmed = rankedSearchQuery.trim();
 
   return (
     <div className={cn(['flex flex-col h-full w-full gap-y-1'])}>
@@ -152,18 +167,46 @@ export const RenderBarChart = ({
         }
       })}
 
-      {bars
-        .toSorted((a, b) => b.totalTime - a.totalTime)
-        .map((bar) => (
-          <RenderBar
-            key={bar.kind === 'render' ? bar.event.id : bar.kind}
-            bars={bars}
-            bar={bar}
-            debouncedMouseEnter={debouncedMouseEnter}
-            totalBarTime={totalBarTime}
-            isProduction={isProduction}
+      {bars.length > 0 && (
+        <div className={cn(['sticky top-0 z-[2] bg-[#0A0A0A] pb-2'])}>
+          <label className="sr-only" htmlFor="react-scan-ranked-search">
+            Search ranked components
+          </label>
+          <input
+            id="react-scan-ranked-search"
+            type="search"
+            value={rankedSearchQuery}
+            onInput={(event) =>
+              setRankedSearchQuery((event.target as HTMLInputElement).value)
+            }
+            placeholder="Search components…"
+            autoComplete="off"
+            spellcheck={false}
+            className={cn([
+              'w-full rounded-sm border border-[#27272A] bg-[#18181B] px-2.5 py-1.5',
+              'text-xs text-white placeholder:text-[#6E6E77] select-text',
+              'outline-none focus-visible:ring-2 focus-visible:ring-[#7521c8] focus-visible:border-transparent',
+            ])}
           />
-        ))}
+        </div>
+      )}
+
+      {rankedSearchTrimmed && visibleTopLevelBars.length === 0 && bars.length > 0 ? (
+        <p className={cn(['text-xs text-[#A1A1AA] py-2'])}>
+          No components match &ldquo;{rankedSearchTrimmed}&rdquo;
+        </p>
+      ) : null}
+
+      {visibleTopLevelBars.map((bar) => (
+        <RenderBar
+          key={bar.kind === 'render' ? bar.event.id : bar.kind}
+          bars={bars}
+          bar={bar}
+          debouncedMouseEnter={debouncedMouseEnter}
+          safeBarWidthDenominator={safeBarWidthDenominator}
+          isProduction={isProduction}
+        />
+      ))}
     </div>
   );
 };
@@ -184,7 +227,7 @@ const getTransitionState = (state: {
 const RenderBar = ({
   bar,
   debouncedMouseEnter,
-  totalBarTime,
+  safeBarWidthDenominator,
   isProduction,
   bars,
   depth = 0,
@@ -198,7 +241,7 @@ const RenderBar = ({
       lastCallAt: number | null;
     };
   };
-  totalBarTime: number;
+  safeBarWidthDenominator: number;
   isProduction: boolean | null;
 }) => {
   const { setNotificationState, setRoute } = useNotificationsContext();
@@ -222,6 +265,8 @@ const RenderBar = ({
             ),
         )
       : [];
+
+  const safeWidthDenominator = safeBarWidthDenominator;
 
   const handleBarClick = () => {
     if (bar.kind === 'render') {
@@ -382,7 +427,7 @@ const RenderBar = ({
           <div
             style={{
               minWidth: 'fit-content',
-              width: `${(bar.totalTime / totalBarTime) * 100}%`,
+              width: `${(bar.totalTime / safeWidthDenominator) * 100}%`,
             }}
             className={cn([
               'flex items-center rounded-sm text-white text-xs h-[28px] shrink-0',
@@ -403,22 +448,7 @@ const RenderBar = ({
           >
             <div className="flex items-center gap-x-2 min-w-0 w-full">
               <span className={cn(['truncate'])}>
-                {iife(() => {
-                  switch (bar.kind) {
-                    case 'other-frame-drop': {
-                      return 'JavaScript, DOM updates, Draw Frame';
-                    }
-                    case 'other-javascript': {
-                      return 'JavaScript/React Hooks';
-                    }
-                    case 'other-not-javascript': {
-                      return 'Update DOM and Draw New Frame';
-                    }
-                    case 'render': {
-                      return bar.event.name;
-                    }
-                  }
-                })}
+                {getRankedBarDisplayLabel(bar)}
               </span>
               {bar.kind === 'render' && isRenderMemoizable(bar.event) && (
                 <div
@@ -502,7 +532,7 @@ const RenderBar = ({
                   key={i}
                   bar={parentBar}
                   debouncedMouseEnter={debouncedMouseEnter}
-                  totalBarTime={totalBarTime}
+                  safeBarWidthDenominator={safeBarWidthDenominator}
                   isProduction={isProduction}
                   bars={bars}
                 />
