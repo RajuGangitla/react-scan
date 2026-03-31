@@ -263,10 +263,8 @@ const RenderBar = ({
           !bars.some(
             (b) => b.kind === 'render' && b.event.name === parentName,
           ),
-      )
+        )
       : [];
-
-  const safeWidthDenominator = safeBarWidthDenominator;
 
   const handleBarClick = () => {
     if (bar.kind === 'render') {
@@ -427,7 +425,7 @@ const RenderBar = ({
           <div
             style={{
               minWidth: 'fit-content',
-              width: `${(bar.totalTime / safeWidthDenominator) * 100}%`,
+              width: `${(bar.totalTime / safeBarWidthDenominator) * 100}%`,
             }}
             className={cn([
               'flex items-center rounded-sm text-white text-xs h-[28px] shrink-0',
