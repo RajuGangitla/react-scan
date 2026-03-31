@@ -39,9 +39,9 @@ export const fadeOutHighlights = () => {
       current:
         HighlightStore.value.current?.alpha === 0
           ? // we want to only start fading from transition if current is done animating out
-            HighlightStore.value.transitionTo
+          HighlightStore.value.transitionTo
           : // if current doesn't exist then transition must exist
-            (HighlightStore.value.current ?? HighlightStore.value.transitionTo),
+          (HighlightStore.value.current ?? HighlightStore.value.transitionTo),
     };
     return;
   }
@@ -86,7 +86,7 @@ export const RenderBarChart = ({
       case 'interaction': {
         return (
           (selectedEvent.timing.otherJSTime + selectedEvent.timing.renderTime) /
-            totalInteractionTime <
+          totalInteractionTime <
           0.2
         );
       }
@@ -252,18 +252,18 @@ const RenderBar = ({
   const parentBars = bars.filter((otherBar) =>
     otherBar.kind === 'render' && bar.kind === 'render'
       ? bar.event.parents.has(otherBar.event.name) &&
-        otherBar.event.name !== bar.event.name
+      otherBar.event.name !== bar.event.name
       : false,
   );
 
   const missingParentNames =
     bar.kind === 'render'
       ? Array.from(bar.event.parents).filter(
-          (parentName) =>
-            !bars.some(
-              (b) => b.kind === 'render' && b.event.name === parentName,
-            ),
-        )
+        (parentName) =>
+          !bars.some(
+            (b) => b.kind === 'render' && b.event.name === parentName,
+          ),
+      )
       : [];
 
   const safeWidthDenominator = safeBarWidthDenominator;
@@ -362,9 +362,9 @@ const RenderBar = ({
                         kind: 'transition',
                         current: HighlightStore.value.current
                           ? {
-                              alpha: 0,
-                              ...HighlightStore.value.current,
-                            }
+                            alpha: 0,
+                            ...HighlightStore.value.current,
+                          }
                           : null,
                         transitionTo: {
                           rects: stateRects,
@@ -386,9 +386,9 @@ const RenderBar = ({
                   },
                   current: currentState
                     ? {
-                        alpha: 0,
-                        ...currentState,
-                      }
+                      alpha: 0,
+                      ...currentState,
+                    }
                     : null,
                 };
               }
@@ -433,11 +433,11 @@ const RenderBar = ({
               'flex items-center rounded-sm text-white text-xs h-[28px] shrink-0',
               bar.kind === 'render' && 'bg-[#412162] group-hover:bg-[#5b2d89]',
               bar.kind === 'other-frame-drop' &&
-                'bg-[#44444a] group-hover:bg-[#6a6a6a]',
+              'bg-[#44444a] group-hover:bg-[#6a6a6a]',
               bar.kind === 'other-javascript' &&
-                'bg-[#efd81a6b] group-hover:bg-[#efda1a2f]',
+              'bg-[#efd81a6b] group-hover:bg-[#efda1a2f]',
               bar.kind === 'other-not-javascript' &&
-                'bg-[#214379d4] group-hover:bg-[#21437982]',
+              'bg-[#214379d4] group-hover:bg-[#21437982]',
             ])}
           />
           <div

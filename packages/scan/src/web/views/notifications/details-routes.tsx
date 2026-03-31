@@ -138,7 +138,10 @@ export const DetailsRoutes = () => {
     case 'render-visualization': {
       return (
         <TabLayout>
-          <RenderBarChart selectedEvent={notificationState.selectedEvent} />
+          <RenderBarChart
+            key={notificationState.selectedEvent.id}
+            selectedEvent={notificationState.selectedEvent}
+          />
         </TabLayout>
       );
     }
